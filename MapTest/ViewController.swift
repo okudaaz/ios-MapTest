@@ -8,10 +8,12 @@
 
 import UIKit
 import MapKit
+import CoreLocation
 
-class ViewController: UIViewController, CLLocationManagerDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
 
     var myLocationManager:CLLocationManager!
+    var locations:[CLLocationCoordinate2D] = [];
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,6 +27,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         
         myLocationManager.startUpdatingLocation()
         
+        mapView.delegate = self;
     }
 
     override func didReceiveMemoryWarning() {
@@ -42,23 +45,51 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         let longitude = newLocation.coordinate.longitude
         let latitude = newLocation.coordinate.latitude
         
-        print("Location = {\(latitude), \(longitude)}")
-        
+
         let location = CLLocationCoordinate2D(
             latitude: latitude,
             longitude: longitude
         )
+
+        locations.append(location)
         
-        let span = MKCoordinateSpanMake(0.05, 0.05)
-        let region = MKCoordinateRegion(center: location, span: span)
-        mapView.setRegion(region, animated: true)
+        /*
+        let geodesic = MKGeodesicPolyline(coordinates: &locations[0], count: locations.count)
+        mapView.addOverlay(geodesic)
+        */
+
+        let polyLine = MKPolyline(coordinates: &locations[0], count: locations.count)
+        mapView.addOverlay(polyLine)
         
+        
+        print("Location = {\(latitude), \(longitude)}, #\(locations.count)")
+
+        if(locations.count == 1){
+            let span = MKCoordinateSpanMake(0.05, 0.05)
+            let region = MKCoordinateRegion(center: location, span: span)
+            mapView.setRegion(region, animated: true)
+        }
+        
+        /*
         let annotation = MKPointAnnotation()
         annotation.coordinate = location
         annotation.title = "Current Position"
         annotation.subtitle = "My Home"
         mapView.addAnnotation(annotation)
+        */
         
+    }
+    
+    func mapView(mapView: MKMapView!, rendererForOverlay overlay: MKOverlay!) -> MKOverlayRenderer! {
+        
+        if overlay is MKPolyline {
+            var polylineRenderer = MKPolylineRenderer(overlay: overlay)
+            polylineRenderer.strokeColor = UIColor.blueColor()
+            polylineRenderer.lineWidth = 5
+            return polylineRenderer
+        }
+    
+        return nil
     }
     
     /** 位置情報取得失敗時 */
